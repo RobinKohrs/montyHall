@@ -1,0 +1,16 @@
+/* Write your global styles here, in PostCSS syntax */
+
+@tailwind components;
+
+@tailwind utilities;
+
+body,
+html {
+  margin: 0;
+  padding: 0;
+  background-color: palegoldenrod;
+}
+
+body {
+  font-family: "Gill Sans", "Gill Sans MT", Calibri, "Trebuchet MS", sans-serif;
+}
