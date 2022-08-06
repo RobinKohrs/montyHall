@@ -34,14 +34,15 @@
   }
 </script>
 
-<section class="container" style="min-height: 50vh;">
-  <div class="relative intructions-container mx-auto h-36">
+<section class="intro-container" style="min-height: 50vh; padding-top: 5%;">
+  <div class="relative intructions-container mx-auto" style="height: 100px;">
     {#each Object.keys(steps) as step, i}
       {#if i === currentStep}
         <div
-          class="h-36 flex items-center justify-center text-xl mx-auto"
-          in:slide={{ duration: 200, delay: 200 }}
-          out:fade={{ duration: 150 }}
+          class="flex instruction items-center justify-center text-xl mx-auto"
+          style="height: 100px;"
+          in:slide={{ duration: 1000, delay: 100 }}
+          out:fade={{ duration: 50 }}
         >
           {#if i === 0}
             <button on:click={showNext}>{steps[currentStep].text}</button>
@@ -64,21 +65,35 @@
     {/if}
 
     {#if currentStep != steps.length - 1}
-      <button on:click={showNext}>Next</button>
+      {#if currentStep == 0}
+        <button on:click={showNext}>Instructions</button>
+      {:else}
+        <button on:click={showNext}>Next</button>
+      {/if}
     {/if}
   </div>
 </section>
 
 <style>
+  .intro-container button {
+    font-size: 2rem;
+  }
+
+  .instruction {
+    font-size: 2rem;
+  }
+
   .instruction-controllers {
     display: flex;
     justify-content: center;
     gap: 2rem;
+    padding-top: 3rem;
   }
   .start-game-btn {
-    padding: 2rem;
-    text-decoration: dotted;
-    background-image: none;
-    font-size: 3rem;
+    padding: 1rem;
+    font-size: 2rem;
+    position: absolute;
+    background-color: darkolivegreen;
+    width: 200px;
   }
 </style>

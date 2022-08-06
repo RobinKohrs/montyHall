@@ -1,5 +1,6 @@
 <script>
   import { createEventDispatcher } from "svelte";
+  import { fade, fly, slide } from "svelte/transition";
   const dispatch = createEventDispatcher();
 
   // some consts
@@ -14,15 +15,17 @@
   let decidedIfSwitch = false;
 
   function goBack() {
-    dispatch("goBack");
+    fResults = undefined;
+    dispatch("goBack", fResults);
   }
 
   // need to make a defautl array so that the doors can appear
   let doors = Array.from({ length: 3 }).map((e, i) => i);
 
+  let fResults;
   function formatedResults(results) {
     if (!results) return;
-    let fResults = results.reduce(
+    fResults = results.reduce(
       (acc, curr) => {
         let res = curr["switched"]
           ? {
@@ -52,6 +55,7 @@
         },
       }
     );
+
     dispatch("result", fResults);
     return fResults;
   }
@@ -60,10 +64,7 @@
 
   $: gameInstructions = [
     {
-      text: "Pick a door",
-    },
-    {
-      text: "A door with no win is revealed",
+      text: "Pick a door!",
     },
     {
       text: `Switch to door ${
@@ -76,11 +77,7 @@
   ];
 
   // play the entire game within a function
-  function newGame() {
-    /////////////
-    // the setup
-    /////////////
-
+  function newGame(simulate = false) {
     // played did not yet decide to switch or not
     decidedIfSwitch = false;
 
@@ -93,34 +90,50 @@
     // new winning door
     winDoor = Math.floor(Math.random() * 3);
 
-    // get the doors
-    doorsHTML = [...doorContainer.children];
+    if (!simulate) {
+      // get the doors
+      doorsHTML = [...doorContainer.children];
 
-    // uncolor all the doors
-    doorsHTML.forEach((e) => {
-      e.style.background = "none";
-      e.style.border = "1px solid black";
-      e.style.outline = "none";
-      e.innerHTML = "???";
-    });
+      // uncolor all the doors
+      doorsHTML.forEach((e) => {
+        // e.style.background = "none";
+        // e.style.border = "1px solid black";
+        // e.style.outline = "none";
+        e.innerHTML = "???";
+        e.removeAttribute("style");
+      });
+    }
   }
 
-  function handleStep(e, d) {
+  function handleStep(i, d) {
     // Initial Guess
     if (gameStep == 0) {
       // save the pick
       pickDoor = d;
 
       // color the door
-      doorsHTML[d].style.background = "red";
+      doorsHTML[d].style.background = "#b14d8e";
       doorsHTML[d].innerHTML = "Picked";
 
-      // increase the step
+      // get the options to reveal
+      let options = doors.filter((d, i) => {
+        return d !== winDoor && d !== pickDoor;
+      });
+
+      // reveal one door from the options
+      revealDoor = options[Math.floor(Math.random() * options.length)];
+
+      // color the revealed loose
+      doorsHTML[revealDoor].style.boxShadow = "10px 10px 100px black inset";
+      doorsHTML[revealDoor].innerHTML = "No Win Here :(";
+
+      // // increase the step
       gameStep = 1;
+      return;
     }
 
     // switching or not
-    if (gameStep === 2) {
+    if (gameStep === 1) {
       if (d === "yes") {
         pickDoor = doors.find((e) => {
           return e !== pickDoor && e !== revealDoor;
@@ -131,33 +144,10 @@
         pickDoor = pickDoor;
       }
 
-      gameStep = 3;
+      gameStep = 2;
       decidedIfSwitch = true;
       evalGame(pickDoor, winDoor);
     }
-  }
-
-  // if the user just made the initial guess
-  $: if (gameStep === 1) {
-    // reveal the door
-    console.log(
-      `The winning door is door: ${winDoor}.\n The pick is door: ${pickDoor}`
-    );
-
-    // check the options you have to reveal
-    let options = doors.filter((d, i) => {
-      return d !== winDoor && d !== pickDoor;
-    });
-
-    // reveal one door from the options
-    revealDoor = options[Math.floor(Math.random() * options.length)];
-
-    // color the revealed loose
-    doorsHTML[revealDoor].style.outline = "3px solid green";
-    doorsHTML[revealDoor].innerHTML = "No Win Here";
-
-    // bump up the gamestep to 2
-    gameStep = 2;
   }
 
   $: if (doorContainer) {
@@ -180,69 +170,116 @@
       results[game] = res;
       results = results;
     }
-
     game++;
+  }
+
+  function startSimulation() {
+    let arr = Array.from({ length: 10000 }).map((e, i) => i);
+    for (let i of arr) {
+      // select chosen door and winning door
+      gameStep = 0;
+      pickDoor = Math.floor(Math.random() * 3);
+      winDoor = Math.floor(Math.random() * 3);
+      handleStep(null, pickDoor);
+
+      // switch in half of the time
+      handleStep(null, i % 2 == 0 ? "yes" : "no");
+    }
   }
 </script>
 
-<section class="container" style="min-height: 50vh;">
-  <div class="instructions-container h-8">
-    <p class="instruction">{gameInstructions[gameStep].text}</p>
+<section class="game-container" style="min-height: 50vh;">
+  <div class="instructions-container-template" style="height: 200px;">
+    <!-- {#if !decidedIfSwitch} -->
+    <div class="instructions-container text-center">
+      {gameInstructions[gameStep].text}
+    </div>
+    <!-- {/if} -->
+
+    {#if gameStep === 1 && !decidedIfSwitch}
+      <div class="switch-container">
+        {#each swtichOptions as o, i}
+          <button class="option font-xl" on:click={(e) => handleStep(e, o)}>
+            {o}
+          </button>
+        {/each}
+      </div>
+    {/if}
+
+    <div class="results-switch">
+      {#if decidedIfSwitch}
+        <div class="text-center" style="font-size: 4rem">
+          You {results[game - 1].win ? "Won!!!" : "Lost :("}
+        </div>
+      {/if}
+    </div>
   </div>
 
   <div
     class="door-container flex justify-center text-center"
     bind:this={doorContainer}
+    in:slide={{ duration: 1000, delay: 100 }}
+    out:fade={{ duration: 50 }}
   >
     {#each doors as d, i}
       <div
-        class="door {i !== revealDoor && i !== pickDoor
-          ? 'switch-possible'
-          : ''} flex flex-col justify-center"
+        class="door flex flex-col justify-center"
         on:click={function (e) {
           handleStep(e, d);
         }}
       >
-        <!-- {i === pickDoor ? "picked Door" : i === revealDoor ? "No Win" : "???"} -->
         ???
       </div>
     {/each}
   </div>
 
   {#if doorsHTML}
-    <div class="results-switch h-8">
-      {#if gameStep === 2 && !decidedIfSwitch}
-        <div class="switch-container">
-          {#each swtichOptions as o, i}
-            <button class="option" on:click={(e) => handleStep(e, o)}>
-              {o}
-            </button>
-          {/each}
-        </div>
-      {/if}
-
-      <!-- the results -->
-      {#if decidedIfSwitch}
-        <div class="text-center">
-          You: {results[game - 1].win ? "Won!!!" : "Lost :("}
-        </div>
-      {/if}
-    </div>
-
-    <div class="new-game">
+    <div class="new-game-btns">
       <!-- start a new game only after the children for the current game are loaded -->
       <button on:click={reset}>New Game</button>
-      <button on:click={goBack} class="goBackToInstructions">GoBack</button>
+      <button on:click={goBack} class="goBackToInstructions"
+        >Go back to instructions</button
+      >
+      <button on:click={startSimulation} class="goBackToInstructions"
+        >Simluate 1000 Games</button
+      >
     </div>
   {/if}
 </section>
 
 <style>
+  .instructions-container-template {
+    display: flex;
+    flex-direction: column;
+    min-height: 100px;
+    align-items: center;
+  }
+  .instructions-container {
+    font-size: 3rem;
+    font-family: "Shadows Into Light", cursive;
+    flex-grow: 1;
+  }
+
+  .switch-container {
+    flex-grow: 1;
+  }
+
+  .switch-container > button {
+    font-size: 2rem;
+    margin-left: 2rem;
+    margin-right: 2rem;
+  }
+
+  .results-switch {
+    font-family: "Shadows Into Light", cursive;
+  }
+
   .door-container {
     display: flex;
     gap: 1rem;
     width: 80vw;
     height: 45vh;
+    margin: 0 auto;
   }
 
   .door {
@@ -250,6 +287,7 @@
     width: 25vw;
     height: 40vh;
     box-shadow: 2px 2px 2px 2px;
+    font-size: 2rem;
   }
 
   @media screen and (min-width: 450px) {
@@ -258,14 +296,13 @@
     }
   }
 
-  .new-game {
-    display: flex;
-    justify-content: center;
-  }
-
-  .switch-container {
+  .new-game-btns {
     display: flex;
     justify-content: center;
     gap: 2rem;
+  }
+
+  .new-game-btns > button {
+    font-size: 2rem;
   }
 </style>

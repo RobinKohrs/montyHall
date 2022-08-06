@@ -3,82 +3,59 @@
   import Game from "./Game.svelte";
   import ResultsTable from "./ResultsTable.svelte";
   let finished;
-
   let results;
 
   function updateResultsTable({ detail }) {
-    console.log(`detail: `, detail);
     results = detail;
   }
+
+  const reset = () => {
+    results = undefined;
+    finished = false;
+  };
+
+  $: console.log(`results: `, results);
 </script>
 
-<section class="app-container" style="">
-  <button
-    on:click={() => {
-      finished = true;
-    }}>Skip Intro</button
-  >
+{#if !finished}
+  <div class="skip-intro-btn">
+    <button
+      on:click={() => {
+        finished = true;
+      }}>Skip Instructions</button
+    >
+  </div>
+{/if}
 
-  {#if !finished}
-    <Intro on:finished={() => (finished = true)} />
-  {:else}
-    <Game on:goBack={() => (finished = false)} on:result={updateResultsTable} />
-  {/if}
+{#if !finished}
+  <Intro on:finished={() => (finished = true)} />
+{:else}
+  <Game on:goBack={reset} on:result={updateResultsTable} />
+{/if}
 
-  {#if results}
-    <div class="results">
-      <div>Move</div>
-      <div>Played</div>
-      <div>Won</div>
-      <div>Rate</div>
-      <div>Switched</div>
-      <div>{results.switched.played}</div>
-      <div>{results.switched.won}</div>
-      <div>
-        {(results.switched.won / results.switched.played).toLocaleString("DE", {
-          maximumFractionDigits: 2,
-        })}
-      </div>
-      <div>Put</div>
-      <div>{results.put.played}</div>
-      <div>{results.put.won}</div>
-      <div>
-        {(results.put.won / results.put.played || "-").toLocaleString("DE", {
-          maximumFractionDigits: 2,
-        })}
-      </div>
-    </div>
-  {/if}
-</section>
+{#if results}
+  <ResultsTable {results} />
+{/if}
 
 <style>
+  @import url("https://fonts.googleapis.com/css2?family=Shadows+Into+Light&display=swap");
+
   :global(button) {
     padding: 0.3rem;
     border-radius: 0.3rem;
     outline: none;
     border: none;
     cursor: pointer;
-    background-image: linear-gradient(90deg, #d65108, #efa00b 50%, #d0e3c4);
+    background-color: #777777;
+    color: #000;
+    font-family: "Shadows Into Light", cursive;
   }
 
-  .app-container {
-    width: 100vw;
-    height: 100vh;
-    margin: 0 auto;
-    position: relative;
+  .skip-intro-btn {
+    text-align: center;
   }
 
-  .results {
-    padding-top: 2rem;
-    display: grid;
-    grid-template-rows: repeat(4, minmax(0, 1fr));
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-  }
-
-  @media screen and (min-width: 450px) {
-    .results {
-      max-width: 60vw;
-      margin: 0 auto;
-    }
+  .skip-intro-btn > button {
+    font-size: 2rem;
   }
 </style>
