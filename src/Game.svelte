@@ -68,7 +68,7 @@
     },
     {
       text: `Switch to door ${
-        [0, 1, 2].filter((e) => e !== revealDoor && e !== pickDoor)[0]
+        [0, 1, 2].filter((e) => e !== revealDoor && e !== pickDoor)[0] + 1
       }?`,
     },
     {
@@ -78,6 +78,8 @@
 
   // play the entire game within a function
   function newGame(simulate = false) {
+    if (!simulate) simulating = false;
+
     // played did not yet decide to switch or not
     decidedIfSwitch = false;
 
@@ -112,8 +114,8 @@
       pickDoor = d;
 
       // color the door
-      doorsHTML[d].style.background = "#b14d8e";
-      doorsHTML[d].innerHTML = "Picked";
+      doorsHTML[d].style.background = "radial-gradient(#e66465, #9198e5)";
+      doorsHTML[d].innerHTML = simulating ? "simulating" : "Picked";
 
       // get the options to reveal
       let options = doors.filter((d, i) => {
@@ -124,8 +126,9 @@
       revealDoor = options[Math.floor(Math.random() * options.length)];
 
       // color the revealed loose
-      doorsHTML[revealDoor].style.boxShadow = "10px 10px 100px black inset";
-      doorsHTML[revealDoor].innerHTML = "No Win Here :(";
+      doorsHTML[revealDoor].style.boxShadow = "2px 2px 2px 2px";
+      doorsHTML[revealDoor].style.fontSize = simulating ? "4rem" : "10rem";
+      doorsHTML[revealDoor].innerHTML = simulating ? "simulating" : "X";
 
       // // increase the step
       gameStep = 1;
@@ -143,6 +146,13 @@
         switched = false;
         pickDoor = pickDoor;
       }
+
+      doorsHTML.forEach((e, i) => {
+        e.style.background =
+          i === pickDoor ? "radial-gradient(#e66465, #9198e5)" : "none";
+        e.innerHTML = i === winDoor ? "PRIZE" : "LOOSE";
+        e.style.fontSize = "4rem";
+      });
 
       gameStep = 2;
       decidedIfSwitch = true;
@@ -173,7 +183,9 @@
     game++;
   }
 
+  let simulating = false;
   function startSimulation() {
+    simulating = true;
     let arr = Array.from({ length: 10000 }).map((e, i) => i);
     for (let i of arr) {
       // select chosen door and winning door
@@ -209,7 +221,11 @@
     <div class="results-switch">
       {#if decidedIfSwitch}
         <div class="text-center" style="font-size: 4rem">
-          You {results[game - 1].win ? "Won!!!" : "Lost :("}
+          {#if !simulating}
+            You {results[game - 1].win ? "Won!!!" : "Lost :("}
+          {:else}
+            Simulating...
+          {/if}
         </div>
       {/if}
     </div>
@@ -303,6 +319,14 @@
   }
 
   .new-game-btns > button {
-    font-size: 2rem;
+    font-size: 1rem;
+    padding: 0.5rem;
+  }
+
+  @media screen and (min-width: 450px) {
+    .new-game-btns > button {
+      font-size: 2rem;
+      padding: 0.5rem;
+    }
   }
 </style>

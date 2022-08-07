@@ -18,7 +18,7 @@
 </script>
 
 {#if !finished}
-  <div class="skip-intro-btn">
+  <div class="skip-intro-btn pt-4">
     <button
       on:click={() => {
         finished = true;
@@ -53,6 +53,11 @@
 
   .skip-intro-btn {
     text-align: center;
+    transition: transform 0.5s;
+  }
+
+  .skip-intro-btn:hover {
+    transform: scale(150%);
   }
 
   .skip-intro-btn > button {
